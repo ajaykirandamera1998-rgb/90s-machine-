@@ -3,56 +3,274 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>90's MACHINE - 90's Cafe, Khammam</title>
+  <title>90's MACHINE - RETRO AR</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Fredoka:wght@500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
 
+  <!-- STABLE LIBRARIES (A-Frame 1.4.2 + MindAR 1.2.2) -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 
   <style>
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:transparent;touch-action:none}
-    video.mindar-video{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;object-fit:cover!important;z-index:0!important}
-    canvas.mindar-canvas{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:1!important;pointer-events:auto!important}
-    a-scene,.a-canvas{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:2!important;background:transparent!important}
-    .a-enter-vr,.a-enter-ar,.a-orientation-modal,.a-loader-title{display:none!important}
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
 
-    #entry-screen{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;background:#f2e6c9}
-    #entry-screen.hidden{display:none}
-    #entry-sunburst{position:absolute;top:50%;left:50%;width:220vw;height:220vw;border-radius:50%;transform:translate(-50%,-50%);background:repeating-conic-gradient(#1b6b67 0deg 9deg,#7a2426 9deg 18deg);opacity:.18}
-    #entry-title{position:relative;margin:0;color:#7a2426;font-family:"Baloo 2",sans-serif;font-size:clamp(44px,14vw,72px);font-weight:800;letter-spacing:1px;line-height:.9;text-shadow:4px 4px 0 #e8a62e,7px 7px 0 #241a14}
-    #entry-subtitle{position:relative;margin-top:14px;padding:7px 22px;border:3px solid #241a14;border-radius:999px;background:#1b6b67;color:#f7efd9;font-family:"Fredoka",sans-serif;font-size:15px;font-weight:600}
-    #entry-hint{position:relative;max-width:320px;margin:26px 0 0;color:#241a14;font-family:"Fredoka",sans-serif;font-size:14px;line-height:1.5;opacity:.8}
-    #entry-btn{position:relative;margin-top:22px;padding:14px 38px;border:3px solid #241a14;border-radius:999px;background:#e8a62e;color:#241a14;box-shadow:4px 4px 0 #241a14;font-family:"Fredoka",sans-serif;font-size:17px;font-weight:600;cursor:pointer}
-    #entry-btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #241a14}
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+      touch-action: none;
+    }
 
-    #scan-hud{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .35s}
-    #scan-hud.visible{opacity:1}
-    #scan-frame{position:relative;width:58vw;max-width:320px;aspect-ratio:1/1.15}
-    #scan-frame .corner{position:absolute;width:34px;height:34px;border:4px solid #1b6b67;animation:scan-pulse 1.8s ease-in-out infinite}
-    @keyframes scan-pulse{0%,100%{opacity:.55}50%{opacity:1}}
-    #scan-frame .tl{top:0;left:0;border-right:none;border-bottom:none;border-radius:10px 0 0}
-    #scan-frame .tr{top:0;right:0;border-bottom:none;border-left:none;border-radius:0 10px 0 0}
-    #scan-frame .bl{bottom:0;left:0;border-top:none;border-right:none;border-radius:0 0 0 10px}
-    #scan-frame .br{right:0;bottom:0;border-top:none;border-left:none;border-radius:0 0 10px 0}
-    #scan-hint{position:absolute;bottom:-44px;left:50%;padding:6px 16px;border-radius:999px;transform:translateX(-50%);background:rgba(0,0,0,.58);color:#fff;font-family:"Fredoka",sans-serif;font-size:14px;white-space:nowrap}
+    video.mindar-video {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+      z-index: 0 !important;
+      display: block !important;
+      background: transparent !important;
+    }
 
-    #object-hud{position:fixed;left:50%;bottom:22px;z-index:80;transform:translateX(-50%);width:90%;max-width:390px;display:flex;flex-direction:column;align-items:center;gap:5px;background:rgba(36,26,20,.92);border:3px solid #e8a62e;border-radius:18px;padding:10px 16px;box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;transition:opacity .35s}
-    #object-hud.visible{opacity:1}
-    #object-name{font-family:"Baloo 2",sans-serif;font-size:24px;line-height:1;color:#e8a62e;text-transform:uppercase}
-    #object-info{font-family:"Fredoka",sans-serif;font-size:12px;color:#f7efd9;text-align:center;opacity:.85}
-    #rotate-hint{font-family:"Fredoka",sans-serif;font-size:11px;color:#f7efd9;opacity:.7;margin-top:2px}
+    canvas.mindar-canvas {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 1 !important;
+      display: block !important;
+      pointer-events: auto !important;
+    }
 
-    #ar-error-toast{position:fixed;bottom:26px;left:50%;z-index:110;display:none;max-width:86vw;padding:12px 18px;border-radius:14px;transform:translateX(-50%);background:rgba(20,10,8,.94);color:#f7efd9;font-family:"Fredoka",sans-serif;font-size:13px;line-height:1.5;text-align:center}
-    #ar-error-toast.visible{display:block}
-    #ambient-layer{position:fixed;inset:0;z-index:44;overflow:hidden;pointer-events:none}
-    .ambient-dot{position:absolute;width:6px;height:6px;border-radius:50%;background:#1b6b67;opacity:0}
-    #brand-watermark{position:fixed;right:14px;top:14px;z-index:42;color:#f7efd9;font-family:"Fredoka",sans-serif;font-weight:600;font-size:13px;letter-spacing:.3px;text-shadow:0 1px 3px rgba(0,0,0,.55);opacity:.92}
+    a-scene, .a-canvas {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 2 !important;
+      display: block !important;
+      background: transparent !important;
+      pointer-events: auto !important;
+    }
+
+    .a-enter-vr, .a-enter-ar, .a-orientation-modal, .a-loader-title {
+      display: none !important;
+    }
+
+    /* ENTRY SCREEN */
+    #entry-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      background: #f2e6c9;
+    }
+    #entry-screen.hidden { display: none; }
+
+    #entry-sunburst {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 220vw;
+      height: 220vw;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      background: repeating-conic-gradient(#1b6b67 0deg 9deg, #7a2426 9deg 18deg);
+      opacity: 0.18;
+    }
+
+    #entry-title {
+      position: relative;
+      margin: 0;
+      color: #7a2426;
+      font-family: "Baloo 2", sans-serif;
+      font-size: clamp(38px, 12vw, 60px);
+      font-weight: 800;
+      letter-spacing: 1px;
+      line-height: 0.95;
+      text-shadow: 4px 4px 0 #e8a62e, 7px 7px 0 #241a14;
+    }
+
+    #entry-subtitle {
+      position: relative;
+      margin-top: 14px;
+      padding: 7px 22px;
+      border: 3px solid #241a14;
+      border-radius: 999px;
+      background: #1b6b67;
+      color: #f7efd9;
+      font-family: "Fredoka", sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    #entry-hint {
+      position: relative;
+      max-width: 300px;
+      margin: 26px 0 0;
+      color: #241a14;
+      font-family: "Fredoka", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      opacity: 0.8;
+    }
+
+    #entry-btn {
+      position: relative;
+      margin-top: 22px;
+      padding: 14px 38px;
+      border: 3px solid #241a14;
+      border-radius: 999px;
+      background: #e8a62e;
+      color: #241a14;
+      box-shadow: 4px 4px 0 #241a14;
+      font-family: "Fredoka", sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #entry-btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0 #241a14;
+    }
+
+    /* SCAN HUD */
+    #scan-hud {
+      position: fixed;
+      inset: 0;
+      z-index: 45;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    #scan-hud.visible { opacity: 1; }
+
+    #scan-frame {
+      position: relative;
+      width: 58vw;
+      max-width: 320px;
+      aspect-ratio: 1 / 1.15;
+    }
+
+    #scan-frame .corner {
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      border: 4px solid #1b6b67;
+      animation: scan-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes scan-pulse {
+      0%, 100% { opacity: 0.55; }
+      50% { opacity: 1; }
+    }
+    #scan-frame .tl { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 10px 0 0 0; }
+    #scan-frame .tr { top: 0; right: 0; border-bottom: none; border-left: none; border-radius: 0 10px 0 0; }
+    #scan-frame .bl { bottom: 0; left: 0; border-top: none; border-right: none; border-radius: 0 0 0 10px; }
+    #scan-frame .br { right: 0; bottom: 0; border-top: none; border-left: none; border-radius: 0 0 10px 0; }
+
+    #scan-hint {
+      position: absolute;
+      bottom: -44px;
+      left: 50%;
+      padding: 6px 16px;
+      border-radius: 999px;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.58);
+      color: #ffffff;
+      font-family: "Fredoka", sans-serif;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    /* ROTATE HINT HUD */
+    #interaction-hud {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 80;
+      padding: 8px 18px;
+      background: rgba(36, 26, 20, 0.88);
+      border: 2px solid #e8a62e;
+      border-radius: 999px;
+      color: #f7efd9;
+      font-family: "Fredoka", sans-serif;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+    #interaction-hud.visible { opacity: 1; }
+
+    #ar-error-toast {
+      position: fixed;
+      bottom: 26px;
+      left: 50%;
+      z-index: 110;
+      display: none;
+      max-width: 86vw;
+      padding: 12px 18px;
+      border-radius: 14px;
+      transform: translateX(-50%);
+      background: rgba(20, 10, 8, 0.94);
+      color: #f7efd9;
+      font-family: "Fredoka", sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      text-align: center;
+    }
+    #ar-error-toast.visible { display: block; }
+
+    #ambient-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 44;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .ambient-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #1b6b67;
+      opacity: 0;
+    }
+
+    #brand-watermark {
+      position: fixed;
+      right: 14px;
+      top: 14px;
+      z-index: 42;
+      pointer-events: none;
+      background: transparent;
+      color: #f7efd9;
+      font-family: "Fredoka", sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.3px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 0 6px rgba(0, 0, 0, 0.35);
+      opacity: 0.92;
+    }
   </style>
 </head>
 
@@ -60,23 +278,23 @@
   <div id="entry-screen">
     <div id="entry-sunburst"></div>
     <h1 id="entry-title">90's MACHINE</h1>
-    <div id="entry-subtitle">Touch the Past, Relive the Memories</div>
-    <p id="entry-hint">Point your camera at a 90's MACHINE target and bring the memories back to life.</p>
+    <div id="entry-subtitle">Touch the Past, Feel the Sound</div>
+    <p id="entry-hint">Point your camera at the target, then tap below to begin.</p>
     <button id="entry-btn" type="button">Tap to Begin</button>
   </div>
 
   <div id="scan-hud">
     <div id="scan-frame">
-      <div class="corner tl"></div><div class="corner tr"></div>
-      <div class="corner bl"></div><div class="corner br"></div>
-      <div id="scan-hint">Point at a 90's machine target</div>
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <div id="scan-hint">Point at the target</div>
     </div>
   </div>
 
-  <div id="object-hud">
-    <div id="object-name">90's MACHINE</div>
-    <div id="object-info">Swipe left/right to rotate 360°</div>
-    <div id="rotate-hint">Scan another target to discover the next memory</div>
+  <div id="interaction-hud">
+    Swipe left/right to rotate 360°
   </div>
 
   <div id="ambient-layer"></div>
@@ -93,49 +311,86 @@
       autoStart: false;
     "
     color-space="sRGB"
-    renderer="alpha: true; antialias: true; colorManagement: true; physicallyCorrectLights: true;"
+    renderer="
+      alpha: true;
+      antialias: true;
+      colorManagement: true;
+      physicallyCorrectLights: true;
+    "
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
     embedded
   >
     <a-assets>
-      <a-asset-item id="tv-model" src="./GLB/retrotv.glb"></a-asset-item>
-      <a-asset-item id="computer-model" src="./GLB/compter.glb"></a-asset-item>
-      <a-asset-item id="coinbox-model" src="./GLB/coinbox.glb"></a-asset-item>
-      <a-asset-item id="colgate-model" src="./GLB/colgate.glb"></a-asset-item>
-      <a-asset-item id="pot-model" src="./GLB/pot.glb"></a-asset-item>
+      <!-- 3D Models -->
+      <a-asset-item id="model-tv" src="./GLB/retrotv.glb"></a-asset-item>
+      <a-asset-item id="model-computer" src="./GLB/compter.glb"></a-asset-item>
+      <a-asset-item id="model-coinbox" src="./GLB/coinbox.glb"></a-asset-item>
+      <a-asset-item id="model-colgate" src="./GLB/colgate.glb"></a-asset-item>
+      <a-asset-item id="model-pot" src="./GLB/pot.glb"></a-asset-item>
 
-      <video id="tv-video" src="./video/TV/tvglitch.mp4" preload="auto" loop muted playsinline crossorigin="anonymous"></video>
-      <audio id="tv-audio" src="./video/TV/tvglitch.mp3" preload="auto"></audio>
+      <!-- TV Video & Audio -->
+      <video id="tv-video" src="./video/TV/tvglitch.mp4" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
+      <audio id="tv-audio" src="./video/TV/tvglitch.mp3" loop crossorigin="anonymous"></audio>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false">
       <a-entity cursor="rayOrigin: mouse" raycaster="objects: [gltf-model]"></a-entity>
     </a-camera>
 
-    <!-- TARGET 0: RETRO TV -->
-    <a-entity id="target-tv" mindar-image-target="targetIndex: 0">
-      <a-entity id="model-tv" gltf-model="#tv-model" position="0 -0.1 0" rotation="0 0 0" scale="0.25 0.25 0.25"></a-entity>
+    <!-- Target 0: Retro TV -->
+    <a-entity id="target-0" mindar-image-target="targetIndex: 0">
+      <a-entity 
+        id="model-entity-0" 
+        gltf-model="#model-tv" 
+        rotation="0 0 0" 
+        position="0 -0.1 0" 
+        scale="0.5 0.5 0.5"
+      ></a-entity>
     </a-entity>
 
-    <!-- TARGET 1: COMPUTER -->
-    <a-entity id="target-computer" mindar-image-target="targetIndex: 1">
-      <a-entity id="model-computer" gltf-model="#computer-model" position="0 -0.1 0" rotation="0 0 0" scale="0.25 0.25 0.25"></a-entity>
+    <!-- Target 1: Computer -->
+    <a-entity id="target-1" mindar-image-target="targetIndex: 1">
+      <a-entity 
+        id="model-entity-1" 
+        gltf-model="#model-computer" 
+        rotation="0 0 0" 
+        position="0 -0.1 0" 
+        scale="0.5 0.5 0.5"
+      ></a-entity>
     </a-entity>
 
-    <!-- TARGET 2: COIN BOX -->
-    <a-entity id="target-coinbox" mindar-image-target="targetIndex: 2">
-      <a-entity id="model-coinbox" gltf-model="#coinbox-model" position="0 -0.1 0" rotation="0 0 0" scale="0.25 0.25 0.25"></a-entity>
+    <!-- Target 2: Coin Box -->
+    <a-entity id="target-2" mindar-image-target="targetIndex: 2">
+      <a-entity 
+        id="model-entity-2" 
+        gltf-model="#model-coinbox" 
+        rotation="0 0 0" 
+        position="0 -0.1 0" 
+        scale="0.5 0.5 0.5"
+      ></a-entity>
     </a-entity>
 
-    <!-- TARGET 3: COLGATE -->
-    <a-entity id="target-colgate" mindar-image-target="targetIndex: 3">
-      <a-entity id="model-colgate" gltf-model="#colgate-model" position="0 -0.1 0" rotation="0 0 0" scale="0.25 0.25 0.25"></a-entity>
+    <!-- Target 3: Colgate -->
+    <a-entity id="target-3" mindar-image-target="targetIndex: 3">
+      <a-entity 
+        id="model-entity-3" 
+        gltf-model="#model-colgate" 
+        rotation="0 0 0" 
+        position="0 -0.1 0" 
+        scale="0.5 0.5 0.5"
+      ></a-entity>
     </a-entity>
 
-    <!-- TARGET 4: POT -->
-    <a-entity id="target-pot" mindar-image-target="targetIndex: 4">
-      <a-entity id="model-pot" gltf-model="#pot-model" position="0 -0.1 0" rotation="0 0 0" scale="0.25 0.25 0.25"></a-entity>
+    <!-- Target 4: Pot -->
+    <a-entity id="target-4" mindar-image-target="targetIndex: 4">
+      <a-entity 
+        id="model-entity-4" 
+        gltf-model="#model-pot" 
+        rotation="0 0 0" 
+        position="0 -0.1 0" 
+        scale="0.5 0.5 0.5"
+      ></a-entity>
     </a-entity>
   </a-scene>
 
@@ -144,270 +399,221 @@
     const entryScreen = document.querySelector("#entry-screen");
     const entryBtn = document.querySelector("#entry-btn");
     const scanHud = document.querySelector("#scan-hud");
-    const objectHud = document.querySelector("#object-hud");
-    const objectName = document.querySelector("#object-name");
+    const interactionHud = document.querySelector("#interaction-hud");
     const errorToast = document.querySelector("#ar-error-toast");
     const ambientLayer = document.querySelector("#ambient-layer");
+
     const tvVideo = document.querySelector("#tv-video");
     const tvAudio = document.querySelector("#tv-audio");
 
-    const TARGET_SCALE = 0.25;
+    const TARGET_SCALE = 0.5;
+    let activeModelEntity = null;
     let hasStartedAR = false;
-    let activeTarget = null;
+    let isTargetActive = false;
 
-    const targets = [
-      { id:"target-tv",       modelId:"model-tv",       name:"90's RETRO TV",   info:"TV GLITCH • 90's MEMORIES" },
-      { id:"target-computer", modelId:"model-computer", name:"90's COMPUTER",   info:"THE CLASSIC HOME COMPUTER" },
-      { id:"target-coinbox",  modelId:"model-coinbox",  name:"COIN BOX",        info:"OLD-SCHOOL CALLING DAYS" },
-      { id:"target-colgate",  modelId:"model-colgate",  name:"COLGATE",         info:"A 90's EVERYDAY MEMORY" },
-      { id:"target-pot",      modelId:"model-pot",      name:"90's POT",        info:"A CLASSIC HOUSEHOLD MEMORY" }
-    ];
+    // GSAP ENTRY SCREEN ANIMATIONS
+    gsap.set("#entry-title, #entry-subtitle, #entry-hint, #entry-btn", { opacity: 0 });
+    gsap.set("#entry-title", { scale: 0.7 });
+    gsap.to("#entry-sunburst", { rotate: 360, duration: 50, repeat: -1, ease: "none" });
 
-    const targetEntities = targets.map(t => document.getElementById(t.id));
-    const modelEntities = targets.map(t => document.getElementById(t.modelId));
-
-    // Small UI sound only; NO radio/station/audio system.
-    let audioCtx = null;
-    function getAudioCtx(){
-      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      return audioCtx;
-    }
-
-    function playClickSound(){
-      try{
-        const ctx=getAudioCtx();
-        if(ctx.state==="suspended") ctx.resume();
-        const osc=ctx.createOscillator(), gain=ctx.createGain();
-        osc.type="triangle";
-        osc.frequency.setValueAtTime(500,ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(800,ctx.currentTime+.1);
-        gain.gain.setValueAtTime(.0001,ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(.12,ctx.currentTime+.02);
-        gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.1);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime+.15);
-      }catch(e){}
-    }
-
-    gsap.set("#entry-title,#entry-subtitle,#entry-hint,#entry-btn",{opacity:0});
-    gsap.set("#entry-title",{scale:.7});
-    gsap.to("#entry-sunburst",{rotate:360,duration:50,repeat:-1,ease:"none"});
     gsap.timeline()
-      .to("#entry-title",{opacity:1,scale:1,duration:.6,ease:"back.out(1.6)"},.1)
-      .to("#entry-subtitle",{opacity:1,duration:.4},.4)
-      .to("#entry-hint",{opacity:1,duration:.4},.6)
-      .to("#entry-btn",{opacity:1,duration:.4},.75);
+      .to("#entry-title", { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.6)" }, 0.1)
+      .to("#entry-subtitle", { opacity: 1, duration: 0.4 }, 0.4)
+      .to("#entry-hint", { opacity: 1, duration: 0.4 }, 0.6)
+      .to("#entry-btn", { opacity: 1, duration: 0.4 }, 0.75);
 
-    sceneEl.addEventListener("arReady",()=>errorToast.classList.remove("visible"));
+    sceneEl.addEventListener("arReady", () => {
+      errorToast.classList.remove("visible");
+    });
 
-    sceneEl.addEventListener("arError",(event)=>{
-      console.error("90's MACHINE MindAR error:",event.detail);
-      errorToast.textContent="Camera could not start. Open this page directly in Chrome/Safari and allow camera access.";
+    sceneEl.addEventListener("arError", (event) => {
+      console.error("90's MACHINE: MindAR camera error:", event.detail);
+      errorToast.textContent = "Camera could not start. Ensure camera permission is allowed.";
       errorToast.classList.add("visible");
     });
 
-    entryBtn.addEventListener("click",async()=>{
-      if(entryBtn.disabled) return;
-      try{
-        const ctx=getAudioCtx();
-        if(ctx.state==="suspended") await ctx.resume();
-        playClickSound();
+    // START CAMERA BUTTON
+    entryBtn.addEventListener("click", async () => {
+      if (entryBtn.disabled) return;
 
-        if(!hasStartedAR){
-          entryBtn.disabled=true;
-          entryBtn.textContent="Starting camera…";
+      try {
+        if (!hasStartedAR) {
+          entryBtn.disabled = true;
+          entryBtn.textContent = "Starting camera…";
 
-          if(!window.isSecureContext){
-            throw new Error("WebAR requires HTTPS or localhost.");
-          }
-          if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-            throw new Error("Camera API is not available in this browser.");
+          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            const primingStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            primingStream.getTracks().forEach((track) => track.stop());
           }
 
-          const mindarSystem=sceneEl.systems["mindar-image-system"];
-          if(!mindarSystem) throw new Error("MindAR system not ready.");
-
-          // Let MindAR own the camera lifecycle.
-          await mindarSystem.start();
-          hasStartedAR=true;
+          const mindarSystem = sceneEl.systems["mindar-image-system"];
+          if (mindarSystem) {
+            await mindarSystem.start();
+            hasStartedAR = true;
+          } else {
+            throw new Error("MindAR system not ready.");
+          }
         }
 
-        gsap.to("#entry-screen",{
-          opacity:0,scale:1.05,duration:.4,ease:"power1.in",
-          onComplete:()=>{
+        gsap.to("#entry-screen", {
+          opacity: 0,
+          scale: 1.05,
+          duration: 0.4,
+          ease: "power1.in",
+          onComplete: () => {
             entryScreen.classList.add("hidden");
-            if(!activeTarget){
+            if (!isTargetActive) {
               scanHud.classList.add("visible");
               startAmbientParticles();
             }
           }
         });
-      }catch(error){
-        console.error("90's MACHINE start error:",error);
-        let message="Could not open camera. Please use HTTPS and Chrome/Safari with camera permission enabled.";
-        if(error.name==="NotAllowedError") message="Camera permission was denied. Allow camera access for this website, then reload.";
-        else if(error.name==="NotFoundError") message="No camera was found on this device.";
-        else if(error.name==="NotReadableError") message="The camera is busy in another app. Close other camera/video apps and try again.";
-        else if(error.message) message=error.message;
-        errorToast.textContent=message;
+      } catch (error) {
+        console.error("90's MACHINE: Start error:", error);
+        errorToast.textContent = "Could not open camera. Please check permissions or open in external browser (Safari/Chrome).";
         errorToast.classList.add("visible");
-        entryBtn.disabled=false;
-        entryBtn.textContent="Tap to Begin";
+        entryBtn.disabled = false;
+        entryBtn.textContent = "Tap to Begin";
       }
     });
 
-    // 360° model rotation.
-    let isDragging=false;
-    let previousTouchX=0;
-    let targetRotationY=0;
+    // 360 DEGREE TOUCH ROTATION LOGIC
+    let isDragging = false;
+    let previousTouchX = 0;
+    let targetRotationY = 0;
 
-    window.addEventListener("pointerdown",e=>{
-      if(e.target.closest("#entry-screen") || e.target.closest("#object-hud")) return;
-      if(!activeTarget) return;
-      isDragging=true;
-      previousTouchX=e.clientX;
+    window.addEventListener("pointerdown", (e) => {
+      if (e.target.closest("#entry-screen")) return;
+      isDragging = true;
+      previousTouchX = e.clientX;
     });
 
-    window.addEventListener("pointermove",e=>{
-      if(!isDragging || !activeTarget) return;
-      const model=document.getElementById(activeTarget.modelId);
-      if(!model || !model.object3D) return;
-      const deltaX=e.clientX-previousTouchX;
-      previousTouchX=e.clientX;
-      targetRotationY+=deltaX*.012;
+    window.addEventListener("pointermove", (e) => {
+      if (!isDragging || !activeModelEntity || !activeModelEntity.object3D) return;
+      const deltaX = e.clientX - previousTouchX;
+      previousTouchX = e.clientX;
+      targetRotationY += deltaX * 0.012;
     });
 
-    window.addEventListener("pointerup",()=>isDragging=false);
-    window.addEventListener("pointercancel",()=>isDragging=false);
+    window.addEventListener("pointerup", () => { isDragging = false; });
+    window.addEventListener("pointercancel", () => { isDragging = false; });
 
-    function updateRotation(){
-      if(activeTarget){
-        const model=document.getElementById(activeTarget.modelId);
-        if(model && model.object3D){
-          model.object3D.rotation.y+=(targetRotationY-model.object3D.rotation.y)*.15;
-        }
+    function updateRotation() {
+      if (activeModelEntity && activeModelEntity.object3D) {
+        activeModelEntity.object3D.rotation.y += (targetRotationY - activeModelEntity.object3D.rotation.y) * 0.15;
       }
       requestAnimationFrame(updateRotation);
     }
     updateRotation();
 
-    function showModel(target){
-      const model=document.getElementById(target.modelId);
-      if(!model) return;
+    // TARGET DETECTION HANDLERS
+    function triggerModelAnimation(entity) {
+      if (!entity) return;
 
-      gsap.killTweensOf(model.object3D ? model.object3D.scale : null);
-      targetRotationY=0;
+      if (entity.object3D) {
+        gsap.killTweensOf(entity.object3D.scale);
+        targetRotationY = 0;
+        entity.object3D.rotation.set(0, 0, 0);
 
-      if(model.object3D){
-        model.object3D.rotation.set(0,0,0);
-        gsap.fromTo(model.object3D.scale,
-          {x:.001,y:.001,z:.001},
-          {x:TARGET_SCALE,y:TARGET_SCALE,z:TARGET_SCALE,duration:.6,ease:"elastic.out(1,.55)"}
+        gsap.fromTo(
+          entity.object3D.scale,
+          { x: 0.001, y: 0.001, z: 0.001 },
+          { x: TARGET_SCALE, y: TARGET_SCALE, z: TARGET_SCALE, duration: 0.6, ease: "elastic.out(1, 0.55)" }
         );
-      }else{
-        model.setAttribute("scale",`${TARGET_SCALE} ${TARGET_SCALE} ${TARGET_SCALE}`);
+      } else {
+        entity.setAttribute("scale", `${TARGET_SCALE} ${TARGET_SCALE} ${TARGET_SCALE}`);
       }
     }
 
-    function hideModel(target){
-      const model=document.getElementById(target.modelId);
-      if(model && model.object3D){
-        gsap.to(model.object3D.scale,{x:.001,y:.001,z:.001,duration:.2,ease:"power1.in"});
-      }
+    // Attach listeners for all 5 targets
+    for (let i = 0; i < 5; i++) {
+      const targetEntity = document.querySelector(`#target-${i}`);
+      const modelEntity = document.querySelector(`#model-entity-${i}`);
+
+      targetEntity.addEventListener("targetFound", () => {
+        isTargetActive = true;
+        activeModelEntity = modelEntity;
+        scanHud.classList.remove("visible");
+        interactionHud.classList.add("visible");
+        stopAmbientParticles();
+
+        if (modelEntity.hasLoaded) {
+          triggerModelAnimation(modelEntity);
+        } else {
+          modelEntity.addEventListener("model-loaded", () => triggerModelAnimation(modelEntity), { once: true });
+        }
+
+        // TV Glitch media playback when Target 0 (Retro TV) is found
+        if (i === 0) {
+          tvVideo.play().catch(e => console.log("Video playback error:", e));
+          tvAudio.play().catch(e => console.log("Audio playback error:", e));
+        }
+      });
+
+      targetEntity.addEventListener("targetLost", () => {
+        isTargetActive = false;
+        interactionHud.classList.remove("visible");
+
+        if (modelEntity && modelEntity.object3D) {
+          gsap.to(modelEntity.object3D.scale, {
+            x: 0.001, y: 0.001, z: 0.001,
+            duration: 0.2,
+            ease: "power1.in"
+          });
+        }
+
+        // Pause TV Glitch media when TV target is lost
+        if (i === 0) {
+          tvVideo.pause();
+          tvAudio.pause();
+        }
+
+        if (entryScreen.classList.contains("hidden")) {
+          scanHud.classList.add("visible");
+          startAmbientParticles();
+        }
+      });
     }
 
-    function stopTVMedia(){
-      try{
-        tvVideo.pause();
-        tvVideo.currentTime=0;
-        tvAudio.pause();
-        tvAudio.currentTime=0;
-      }catch(e){}
-    }
+    // AMBIENT PARTICLES
+    let ambientTimer = null;
 
-    function startTVMedia(){
-      // TV glitch video is muted because browsers require a user gesture for audible autoplay.
-      tvVideo.muted=true;
-      tvVideo.currentTime=0;
-      tvVideo.play().catch(e=>console.log("TV video play:",e));
+    function spawnAmbientDot() {
+      const dot = document.createElement("div");
+      dot.className = "ambient-dot";
 
-      tvAudio.currentTime=0;
-      tvAudio.play().catch(e=>console.log("TV audio play:",e));
-    }
-
-    function targetFound(target){
-      if(activeTarget && activeTarget.id!==target.id){
-        hideModel(activeTarget);
-        if(activeTarget.id==="target-tv") stopTVMedia();
-      }
-
-      activeTarget=target;
-      scanHud.classList.remove("visible");
-      objectHud.classList.add("visible");
-      objectName.textContent=target.name;
-      document.querySelector("#object-info").textContent=target.info;
-      stopAmbientParticles();
-
-      const model=document.getElementById(target.modelId);
-      if(model.hasLoaded) showModel(target);
-      else model.addEventListener("model-loaded",()=>showModel(target),{once:true});
-
-      if(target.id==="target-tv") startTVMedia();
-      else stopTVMedia();
-    }
-
-    function targetLost(target){
-      if(!activeTarget || activeTarget.id!==target.id) return;
-
-      if(target.id==="target-tv") stopTVMedia();
-      hideModel(target);
-      activeTarget=null;
-      objectHud.classList.remove("visible");
-
-      if(entryScreen.classList.contains("hidden")){
-        scanHud.classList.add("visible");
-        startAmbientParticles();
-      }
-    }
-
-    targets.forEach((target,index)=>{
-      const entity=targetEntities[index];
-      entity.addEventListener("targetFound",()=>targetFound(target));
-      entity.addEventListener("targetLost",()=>targetLost(target));
-    });
-
-    // Ambient particles.
-    let ambientTimer=null;
-    function spawnAmbientDot(){
-      const dot=document.createElement("div");
-      dot.className="ambient-dot";
-      dot.style.left=`${window.innerWidth*(.3+Math.random()*.4)}px`;
-      dot.style.top=`${window.innerHeight*.75}px`;
+      const x = window.innerWidth * (0.3 + Math.random() * 0.4);
+      const startY = window.innerHeight * 0.75;
+      dot.style.left = `${x}px`;
+      dot.style.top = `${startY}px`;
       ambientLayer.appendChild(dot);
 
-      gsap.timeline({onComplete:()=>dot.remove()})
-        .to(dot,{opacity:.6,duration:.4},0)
-        .to(dot,{y:-180-Math.random()*100,x:`+=${(Math.random()-.5)*60}`,duration:2.4,ease:"power1.out"},0)
-        .to(dot,{opacity:0,duration:.5},1.9);
+      gsap.timeline({ onComplete: () => dot.remove() })
+        .to(dot, { opacity: 0.6, duration: 0.4 }, 0)
+        .to(dot, { y: -180 - Math.random() * 100, x: `+=${(Math.random() - 0.5) * 60}`, duration: 2.4, ease: "power1.out" }, 0)
+        .to(dot, { opacity: 0, duration: 0.5 }, 1.9);
     }
 
-    function startAmbientParticles(){
-      if(ambientTimer) return;
+    function startAmbientParticles() {
+      if (ambientTimer) return;
       spawnAmbientDot();
-      ambientTimer=setInterval(spawnAmbientDot,700);
+      ambientTimer = window.setInterval(spawnAmbientDot, 700);
     }
 
-    function stopAmbientParticles(){
-      if(ambientTimer){
-        clearInterval(ambientTimer);
-        ambientTimer=null;
+    function stopAmbientParticles() {
+      if (ambientTimer) {
+        window.clearInterval(ambientTimer);
+        ambientTimer = null;
       }
     }
 
-    sceneEl.addEventListener("loaded",()=>{
-      modelEntities.forEach(model=>{
-        model.setAttribute("scale","0.001 0.001 0.001");
-      });
+    sceneEl.addEventListener("loaded", () => {
+      for (let i = 0; i < 5; i++) {
+        const modelEntity = document.querySelector(`#model-entity-${i}`);
+        if (modelEntity) {
+          modelEntity.setAttribute("scale", "0.001 0.001 0.001");
+        }
+      }
     });
   </script>
 </body>
