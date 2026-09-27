@@ -477,7 +477,7 @@
       }
     });
 
-    // 360 DEGREE TOUCH ROTATION LOGIC
+    // SAFE 360 DEGREE TOUCH ROTATION LOGIC
     let isDragging = false;
     let previousTouchX = 0;
     let targetRotationY = 0;
@@ -489,7 +489,8 @@
     });
 
     window.addEventListener("pointermove", (e) => {
-      if (!isDragging || !activeModelEntity || !activeModelEntity.object3D) return;
+      // Safe check for activeModelEntity and object3D
+      if (!isDragging || !isTargetActive || !activeModelEntity || !activeModelEntity.object3D) return;
       const deltaX = e.clientX - previousTouchX;
       previousTouchX = e.clientX;
       targetRotationY += deltaX * 0.012;
@@ -499,7 +500,8 @@
     window.addEventListener("pointercancel", () => { isDragging = false; });
 
     function updateRotation() {
-      if (activeModelEntity && activeModelEntity.object3D) {
+      // Safe check before modifying rotation
+      if (isTargetActive && activeModelEntity && activeModelEntity.object3D && activeModelEntity.object3D.rotation) {
         activeModelEntity.object3D.rotation.y += (targetRotationY - activeModelEntity.object3D.rotation.y) * 0.15;
       }
       requestAnimationFrame(updateRotation);
@@ -530,6 +532,8 @@
       const targetEntity = document.querySelector(`#target-${i}`);
       const modelEntity = document.querySelector(`#model-entity-${i}`);
 
+      if (!targetEntity || !modelEntity) continue;
+
       targetEntity.addEventListener("targetFound", () => {
         isTargetActive = true;
         activeModelEntity = modelEntity;
@@ -543,10 +547,10 @@
           modelEntity.addEventListener("model-loaded", () => triggerModelAnimation(modelEntity), { once: true });
         }
 
-        // TV Glitch media playback when Target 0 (Retro TV) is found
+        // Play TV Glitch video/audio on Target 0 (Retro TV)
         if (i === 0) {
-          tvVideo.play().catch(e => console.log("Video playback error:", e));
-          tvAudio.play().catch(e => console.log("Audio playback error:", e));
+          if (tvVideo) tvVideo.play().catch(e => console.log("Video play error:", e));
+          if (tvAudio) tvAudio.play().catch(e => console.log("Audio play error:", e));
         }
       });
 
@@ -562,11 +566,13 @@
           });
         }
 
-        // Pause TV Glitch media when TV target is lost
+        // Pause TV Glitch video/audio when Target 0 is lost
         if (i === 0) {
-          tvVideo.pause();
-          tvAudio.pause();
+          if (tvVideo) tvVideo.pause();
+          if (tvAudio) tvAudio.pause();
         }
+
+        activeModelEntity = null;
 
         if (entryScreen.classList.contains("hidden")) {
           scanHud.classList.add("visible");
