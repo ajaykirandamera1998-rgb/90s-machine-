@@ -11,7 +11,6 @@
 
   <!-- STABLE LIBRARIES (A-Frame 1.4.2 + MindAR 1.2.2) -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 
@@ -324,7 +323,7 @@
     <a-assets>
       <!-- 3D Models -->
       <a-asset-item id="model-tv" src="./GLB/retrotv.glb"></a-asset-item>
-      <a-asset-item id="model-computer" src="./GLB/compter.glb"></a-asset-item>
+      <a-asset-item id="model-computer" src="./GLB/computer.glb"></a-asset-item>
       <a-asset-item id="model-coinbox" src="./GLB/coinbox.glb"></a-asset-item>
       <a-asset-item id="model-colgate" src="./GLB/colgate.glb"></a-asset-item>
       <a-asset-item id="model-pot" src="./GLB/pot.glb"></a-asset-item>
@@ -546,6 +545,12 @@
   // A-FRAME / MINDAR EVENTS
   // ------------------------------------------------------------
 
+  // The button starts disabled: tapping it before the scene (and the
+  // MindAR system it registers) has finished loading is exactly what
+  // produced the "MindAR image system is not available" error.
+  entryBtn.disabled = true;
+  entryBtn.textContent = "Loading…";
+
   sceneEl.addEventListener("loaded", () => {
     sceneReady = true;
 
@@ -555,6 +560,11 @@
       if (modelEntity) {
         modelEntity.setAttribute("scale", "0.001 0.001 0.001");
       }
+    }
+
+    if (!hasStartedAR) {
+      entryBtn.disabled = false;
+      entryBtn.textContent = "Tap to Begin";
     }
   });
 
@@ -617,6 +627,11 @@
           "SecurityError"
         );
       }
+
+      // Safety net: even though the button is disabled until "loaded"
+      // fires, make sure the scene (and therefore the MindAR system)
+      // is actually ready before we touch it.
+      await waitForSceneLoaded();
 
       if (!navigator.mediaDevices ||
           typeof navigator.mediaDevices.getUserMedia !== "function") {
