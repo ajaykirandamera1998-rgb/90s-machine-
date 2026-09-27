@@ -395,232 +395,529 @@
   </a-scene>
 
   <script>
-    const sceneEl = document.querySelector("#ar-scene");
-    const entryScreen = document.querySelector("#entry-screen");
-    const entryBtn = document.querySelector("#entry-btn");
-    const scanHud = document.querySelector("#scan-hud");
-    const interactionHud = document.querySelector("#interaction-hud");
-    const errorToast = document.querySelector("#ar-error-toast");
-    const ambientLayer = document.querySelector("#ambient-layer");
+  "use strict";
 
-    const tvVideo = document.querySelector("#tv-video");
-    const tvAudio = document.querySelector("#tv-audio");
+  const sceneEl = document.querySelector("#ar-scene");
+  const entryScreen = document.querySelector("#entry-screen");
+  const entryBtn = document.querySelector("#entry-btn");
+  const scanHud = document.querySelector("#scan-hud");
+  const interactionHud = document.querySelector("#interaction-hud");
+  const errorToast = document.querySelector("#ar-error-toast");
+  const ambientLayer = document.querySelector("#ambient-layer");
 
-    const TARGET_SCALE = 0.5;
-    let activeModelEntity = null;
-    let hasStartedAR = false;
-    let isTargetActive = false;
+  const tvVideo = document.querySelector("#tv-video");
+  const tvAudio = document.querySelector("#tv-audio");
 
-    // GSAP ENTRY SCREEN ANIMATIONS
-    gsap.set("#entry-title, #entry-subtitle, #entry-hint, #entry-btn", { opacity: 0 });
-    gsap.set("#entry-title", { scale: 0.7 });
-    gsap.to("#entry-sunburst", { rotate: 360, duration: 50, repeat: -1, ease: "none" });
+  const TARGET_SCALE = 0.5;
 
-    gsap.timeline()
-      .to("#entry-title", { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.6)" }, 0.1)
-      .to("#entry-subtitle", { opacity: 1, duration: 0.4 }, 0.4)
-      .to("#entry-hint", { opacity: 1, duration: 0.4 }, 0.6)
-      .to("#entry-btn", { opacity: 1, duration: 0.4 }, 0.75);
+  let activeModelEntity = null;
+  let hasStartedAR = false;
+  let isTargetActive = false;
+  let isDragging = false;
+  let previousTouchX = 0;
+  let targetRotationY = 0;
+  let ambientTimer = null;
+  let sceneReady = false;
 
-    sceneEl.addEventListener("arReady", () => {
-      errorToast.classList.remove("visible");
+  // ------------------------------------------------------------
+  // HELPERS
+  // ------------------------------------------------------------
+
+  function showError(message) {
+    console.error("90's MACHINE:", message);
+    errorToast.textContent = message;
+    errorToast.classList.add("visible");
+  }
+
+  function hideError() {
+    errorToast.classList.remove("visible");
+  }
+
+  function getCameraErrorMessage(error) {
+    const name = error && error.name ? error.name : "";
+    const message = error && error.message ? error.message : "";
+
+    console.error("90's MACHINE camera error:", {
+      name,
+      message,
+      error
     });
 
-    sceneEl.addEventListener("arError", (event) => {
-      console.error("90's MACHINE: MindAR camera error:", event.detail);
-      errorToast.textContent = "Camera could not start. Ensure camera permission is allowed.";
-      errorToast.classList.add("visible");
-    });
-
-    // START CAMERA BUTTON
-    entryBtn.addEventListener("click", async () => {
-      if (entryBtn.disabled) return;
-
-      try {
-        if (!hasStartedAR) {
-          entryBtn.disabled = true;
-          entryBtn.textContent = "Starting camera…";
-
-          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            const primingStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            primingStream.getTracks().forEach((track) => track.stop());
-          }
-
-          const mindarSystem = sceneEl.systems["mindar-image-system"];
-          if (mindarSystem) {
-            await mindarSystem.start();
-            hasStartedAR = true;
-          } else {
-            throw new Error("MindAR system not ready.");
-          }
-        }
-
-        gsap.to("#entry-screen", {
-          opacity: 0,
-          scale: 1.05,
-          duration: 0.4,
-          ease: "power1.in",
-          onComplete: () => {
-            entryScreen.classList.add("hidden");
-            if (!isTargetActive) {
-              scanHud.classList.add("visible");
-              startAmbientParticles();
-            }
-          }
-        });
-      } catch (error) {
-        console.error("90's MACHINE: Start error:", error);
-        errorToast.textContent = "Could not open camera. Please check permissions or open in external browser (Safari/Chrome).";
-        errorToast.classList.add("visible");
-        entryBtn.disabled = false;
-        entryBtn.textContent = "Tap to Begin";
-      }
-    });
-
-    // SAFE 360 DEGREE TOUCH ROTATION LOGIC
-    let isDragging = false;
-    let previousTouchX = 0;
-    let targetRotationY = 0;
-
-    window.addEventListener("pointerdown", (e) => {
-      if (e.target.closest("#entry-screen")) return;
-      isDragging = true;
-      previousTouchX = e.clientX;
-    });
-
-    window.addEventListener("pointermove", (e) => {
-      // Safe check for activeModelEntity and object3D
-      if (!isDragging || !isTargetActive || !activeModelEntity || !activeModelEntity.object3D) return;
-      const deltaX = e.clientX - previousTouchX;
-      previousTouchX = e.clientX;
-      targetRotationY += deltaX * 0.012;
-    });
-
-    window.addEventListener("pointerup", () => { isDragging = false; });
-    window.addEventListener("pointercancel", () => { isDragging = false; });
-
-    function updateRotation() {
-      // Safe check before modifying rotation
-      if (isTargetActive && activeModelEntity && activeModelEntity.object3D && activeModelEntity.object3D.rotation) {
-        activeModelEntity.object3D.rotation.y += (targetRotationY - activeModelEntity.object3D.rotation.y) * 0.15;
-      }
-      requestAnimationFrame(updateRotation);
-    }
-    updateRotation();
-
-    // TARGET DETECTION HANDLERS
-    function triggerModelAnimation(entity) {
-      if (!entity) return;
-
-      if (entity.object3D) {
-        gsap.killTweensOf(entity.object3D.scale);
-        targetRotationY = 0;
-        entity.object3D.rotation.set(0, 0, 0);
-
-        gsap.fromTo(
-          entity.object3D.scale,
-          { x: 0.001, y: 0.001, z: 0.001 },
-          { x: TARGET_SCALE, y: TARGET_SCALE, z: TARGET_SCALE, duration: 0.6, ease: "elastic.out(1, 0.55)" }
-        );
-      } else {
-        entity.setAttribute("scale", `${TARGET_SCALE} ${TARGET_SCALE} ${TARGET_SCALE}`);
-      }
+    if (!window.isSecureContext &&
+        location.hostname !== "localhost" &&
+        location.hostname !== "127.0.0.1") {
+      return "Camera needs HTTPS. Open this page using an HTTPS URL, not a normal HTTP URL.";
     }
 
-    // Attach listeners for all 5 targets
+    switch (name) {
+      case "NotAllowedError":
+      case "PermissionDeniedError":
+        return "Camera permission is blocked. Allow Camera for this website in browser settings, then reload the page.";
+
+      case "NotFoundError":
+        return "No camera was found on this device. Check that a camera is available and not disabled.";
+
+      case "NotReadableError":
+      case "TrackStartError":
+        return "The camera is already being used by another app or browser tab. Close other camera apps/tabs and try again.";
+
+      case "OverconstrainedError":
+        return "The selected camera settings are not supported by this device. Try again in Chrome or Safari.";
+
+      case "SecurityError":
+        return "The browser is blocking camera access for security reasons. Use HTTPS and allow camera access.";
+
+      case "AbortError":
+        return "The camera startup was interrupted. Close other camera apps and try again.";
+
+      case "TypeError":
+        return "Camera access is unavailable in this page. Make sure you are using HTTPS or localhost and a supported browser.";
+
+      default:
+        return message
+          ? `Camera could not start: ${name || "Unknown error"} — ${message}`
+          : "Camera could not start. Check browser camera permission and use HTTPS.";
+    }
+  }
+
+  function waitForSceneLoaded() {
+    if (sceneEl.hasLoaded || sceneReady) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      sceneEl.addEventListener("loaded", () => {
+        sceneReady = true;
+        resolve();
+      }, { once: true });
+    });
+  }
+
+  function getMindARSystem() {
+    const system = sceneEl.systems && sceneEl.systems["mindar-image-system"];
+
+    if (!system) {
+      throw new Error("MindAR image system is not available.");
+    }
+
+    return system;
+  }
+
+  // ------------------------------------------------------------
+  // ENTRY SCREEN ANIMATIONS
+  // ------------------------------------------------------------
+
+  gsap.set("#entry-title, #entry-subtitle, #entry-hint, #entry-btn", {
+    opacity: 0
+  });
+
+  gsap.set("#entry-title", {
+    scale: 0.7
+  });
+
+  gsap.to("#entry-sunburst", {
+    rotate: 360,
+    duration: 50,
+    repeat: -1,
+    ease: "none"
+  });
+
+  gsap.timeline()
+    .to("#entry-title", {
+      opacity: 1,
+      scale: 1,
+      duration: 0.6,
+      ease: "back.out(1.6)"
+    }, 0.1)
+    .to("#entry-subtitle", {
+      opacity: 1,
+      duration: 0.4
+    }, 0.4)
+    .to("#entry-hint", {
+      opacity: 1,
+      duration: 0.4
+    }, 0.6)
+    .to("#entry-btn", {
+      opacity: 1,
+      duration: 0.4
+    }, 0.75);
+
+  // ------------------------------------------------------------
+  // A-FRAME / MINDAR EVENTS
+  // ------------------------------------------------------------
+
+  sceneEl.addEventListener("loaded", () => {
+    sceneReady = true;
+
+    // Hide models until their image target is found.
     for (let i = 0; i < 5; i++) {
-      const targetEntity = document.querySelector(`#target-${i}`);
       const modelEntity = document.querySelector(`#model-entity-${i}`);
+      if (modelEntity) {
+        modelEntity.setAttribute("scale", "0.001 0.001 0.001");
+      }
+    }
+  });
 
-      if (!targetEntity || !modelEntity) continue;
+  sceneEl.addEventListener("arReady", () => {
+    console.log("90's MACHINE: MindAR camera is ready.");
+    hideError();
+  });
 
-      targetEntity.addEventListener("targetFound", () => {
-        isTargetActive = true;
-        activeModelEntity = modelEntity;
-        scanHud.classList.remove("visible");
-        interactionHud.classList.add("visible");
-        stopAmbientParticles();
+  sceneEl.addEventListener("arError", (event) => {
+    console.error("90's MACHINE: MindAR arError:", event.detail);
 
-        if (modelEntity.hasLoaded) {
-          triggerModelAnimation(modelEntity);
-        } else {
-          modelEntity.addEventListener("model-loaded", () => triggerModelAnimation(modelEntity), { once: true });
-        }
+    let detailMessage = "";
 
-        // Play TV Glitch video/audio on Target 0 (Retro TV)
-        if (i === 0) {
-          if (tvVideo) tvVideo.play().catch(e => console.log("Video play error:", e));
-          if (tvAudio) tvAudio.play().catch(e => console.log("Audio play error:", e));
+    if (event.detail) {
+      if (typeof event.detail === "string") {
+        detailMessage = event.detail;
+      } else if (event.detail.error) {
+        detailMessage = event.detail.error.name || event.detail.error.message || "";
+      } else if (event.detail.message) {
+        detailMessage = event.detail.message;
+      }
+    }
+
+    showError(
+      detailMessage
+        ? `Camera/AR error: ${detailMessage}`
+        : "MindAR could not start the camera. Check camera permission and HTTPS."
+    );
+
+    entryBtn.disabled = false;
+    entryBtn.textContent = "Try Again";
+    hasStartedAR = false;
+  });
+
+  // ------------------------------------------------------------
+  // START CAMERA
+  // IMPORTANT:
+  // Do NOT call getUserMedia() here.
+  // MindAR owns the camera stream. Calling getUserMedia() first
+  // can open a second camera stream and cause startup failures.
+  // ------------------------------------------------------------
+
+  entryBtn.addEventListener("click", async () => {
+    if (entryBtn.disabled || hasStartedAR) return;
+
+    hideError();
+
+    try {
+      entryBtn.disabled = true;
+      entryBtn.textContent = "Starting camera…";
+
+      // Camera APIs normally require a secure context.
+      const isLocalhost =
+        location.hostname === "localhost" ||
+        location.hostname === "127.0.0.1";
+
+      if (!window.isSecureContext && !isLocalhost) {
+        throw new DOMException(
+          "Camera access requires HTTPS or localhost.",
+          "SecurityError"
+        );
+      }
+
+      if (!navigator.mediaDevices ||
+          typeof navigator.mediaDevices.getUserMedia !== "function") {
+        throw new DOMException(
+          "Camera API is not available in this browser/context.",
+          "TypeError"
+        );
+      }
+
+      // Wait until A-Frame and MindAR are completely initialized.
+      await waitForSceneLoaded();
+
+      const mindarSystem = getMindARSystem();
+
+      console.log("90's MACHINE: Starting MindAR…");
+
+      // Only MindAR requests/owns the camera stream.
+      await mindarSystem.start();
+
+      hasStartedAR = true;
+
+      // Give the camera a moment to attach before hiding the entry screen.
+      await new Promise(resolve => setTimeout(resolve, 250));
+
+      gsap.to("#entry-screen", {
+        opacity: 0,
+        scale: 1.05,
+        duration: 0.4,
+        ease: "power1.in",
+        onComplete: () => {
+          entryScreen.classList.add("hidden");
+
+          if (!isTargetActive) {
+            scanHud.classList.add("visible");
+            startAmbientParticles();
+          }
         }
       });
 
-      targetEntity.addEventListener("targetLost", () => {
-        isTargetActive = false;
-        interactionHud.classList.remove("visible");
+      entryBtn.textContent = "Camera Ready";
 
-        if (modelEntity && modelEntity.object3D) {
-          gsap.to(modelEntity.object3D.scale, {
-            x: 0.001, y: 0.001, z: 0.001,
-            duration: 0.2,
-            ease: "power1.in"
+    } catch (error) {
+      console.error("90's MACHINE: Start error:", error);
+
+      hasStartedAR = false;
+      entryBtn.disabled = false;
+      entryBtn.textContent = "Try Again";
+
+      showError(getCameraErrorMessage(error));
+    }
+  });
+
+  // ------------------------------------------------------------
+  // SAFE 360 DEGREE TOUCH / POINTER ROTATION
+  // ------------------------------------------------------------
+
+  window.addEventListener("pointerdown", (e) => {
+    if (!entryScreen.classList.contains("hidden")) return;
+    if (e.target.closest("#entry-screen")) return;
+
+    isDragging = true;
+    previousTouchX = e.clientX;
+  });
+
+  window.addEventListener("pointermove", (e) => {
+    if (!isDragging ||
+        !isTargetActive ||
+        !activeModelEntity ||
+        !activeModelEntity.object3D) {
+      return;
+    }
+
+    const deltaX = e.clientX - previousTouchX;
+    previousTouchX = e.clientX;
+
+    targetRotationY += deltaX * 0.012;
+  });
+
+  window.addEventListener("pointerup", () => {
+    isDragging = false;
+  });
+
+  window.addEventListener("pointercancel", () => {
+    isDragging = false;
+  });
+
+  window.addEventListener("pointerleave", () => {
+    isDragging = false;
+  });
+
+  function updateRotation() {
+    if (
+      isTargetActive &&
+      activeModelEntity &&
+      activeModelEntity.object3D &&
+      activeModelEntity.object3D.rotation
+    ) {
+      activeModelEntity.object3D.rotation.y +=
+        (targetRotationY - activeModelEntity.object3D.rotation.y) * 0.15;
+    }
+
+    requestAnimationFrame(updateRotation);
+  }
+
+  updateRotation();
+
+  // ------------------------------------------------------------
+  // MODEL ANIMATION
+  // ------------------------------------------------------------
+
+  function triggerModelAnimation(entity) {
+    if (!entity) return;
+
+    if (entity.object3D) {
+      gsap.killTweensOf(entity.object3D.scale);
+
+      targetRotationY = 0;
+      entity.object3D.rotation.set(0, 0, 0);
+
+      gsap.fromTo(
+        entity.object3D.scale,
+        {
+          x: 0.001,
+          y: 0.001,
+          z: 0.001
+        },
+        {
+          x: TARGET_SCALE,
+          y: TARGET_SCALE,
+          z: TARGET_SCALE,
+          duration: 0.6,
+          ease: "elastic.out(1, 0.55)"
+        }
+      );
+    } else {
+      entity.setAttribute(
+        "scale",
+        `${TARGET_SCALE} ${TARGET_SCALE} ${TARGET_SCALE}`
+      );
+    }
+  }
+
+  // ------------------------------------------------------------
+  // TARGET DETECTION
+  // ------------------------------------------------------------
+
+  for (let i = 0; i < 5; i++) {
+    const targetEntity = document.querySelector(`#target-${i}`);
+    const modelEntity = document.querySelector(`#model-entity-${i}`);
+
+    if (!targetEntity || !modelEntity) continue;
+
+    targetEntity.addEventListener("targetFound", () => {
+      console.log(`90's MACHINE: Target ${i} found.`);
+
+      isTargetActive = true;
+      activeModelEntity = modelEntity;
+
+      scanHud.classList.remove("visible");
+      interactionHud.classList.add("visible");
+      stopAmbientParticles();
+
+      if (modelEntity.object3D) {
+        triggerModelAnimation(modelEntity);
+      } else {
+        modelEntity.addEventListener(
+          "model-loaded",
+          () => triggerModelAnimation(modelEntity),
+          { once: true }
+        );
+      }
+
+      // Retro TV video/audio
+      if (i === 0) {
+        if (tvVideo) {
+          tvVideo.currentTime = 0;
+          tvVideo.play().catch((error) => {
+            console.warn("TV video autoplay was blocked:", error);
           });
         }
 
-        // Pause TV Glitch video/audio when Target 0 is lost
-        if (i === 0) {
-          if (tvVideo) tvVideo.pause();
-          if (tvAudio) tvAudio.pause();
-        }
-
-        activeModelEntity = null;
-
-        if (entryScreen.classList.contains("hidden")) {
-          scanHud.classList.add("visible");
-          startAmbientParticles();
-        }
-      });
-    }
-
-    // AMBIENT PARTICLES
-    let ambientTimer = null;
-
-    function spawnAmbientDot() {
-      const dot = document.createElement("div");
-      dot.className = "ambient-dot";
-
-      const x = window.innerWidth * (0.3 + Math.random() * 0.4);
-      const startY = window.innerHeight * 0.75;
-      dot.style.left = `${x}px`;
-      dot.style.top = `${startY}px`;
-      ambientLayer.appendChild(dot);
-
-      gsap.timeline({ onComplete: () => dot.remove() })
-        .to(dot, { opacity: 0.6, duration: 0.4 }, 0)
-        .to(dot, { y: -180 - Math.random() * 100, x: `+=${(Math.random() - 0.5) * 60}`, duration: 2.4, ease: "power1.out" }, 0)
-        .to(dot, { opacity: 0, duration: 0.5 }, 1.9);
-    }
-
-    function startAmbientParticles() {
-      if (ambientTimer) return;
-      spawnAmbientDot();
-      ambientTimer = window.setInterval(spawnAmbientDot, 700);
-    }
-
-    function stopAmbientParticles() {
-      if (ambientTimer) {
-        window.clearInterval(ambientTimer);
-        ambientTimer = null;
-      }
-    }
-
-    sceneEl.addEventListener("loaded", () => {
-      for (let i = 0; i < 5; i++) {
-        const modelEntity = document.querySelector(`#model-entity-${i}`);
-        if (modelEntity) {
-          modelEntity.setAttribute("scale", "0.001 0.001 0.001");
+        if (tvAudio) {
+          tvAudio.currentTime = 0;
+          tvAudio.play().catch((error) => {
+            console.warn("TV audio autoplay was blocked:", error);
+          });
         }
       }
     });
-  </script>
+
+    targetEntity.addEventListener("targetLost", () => {
+      console.log(`90's MACHINE: Target ${i} lost.`);
+
+      isTargetActive = false;
+      interactionHud.classList.remove("visible");
+
+      if (modelEntity && modelEntity.object3D) {
+        gsap.to(modelEntity.object3D.scale, {
+          x: 0.001,
+          y: 0.001,
+          z: 0.001,
+          duration: 0.2,
+          ease: "power1.in"
+        });
+      }
+
+      // Pause TV video/audio when target is lost
+      if (i === 0) {
+        if (tvVideo) tvVideo.pause();
+        if (tvAudio) tvAudio.pause();
+      }
+
+      activeModelEntity = null;
+
+      if (entryScreen.classList.contains("hidden")) {
+        scanHud.classList.add("visible");
+        startAmbientParticles();
+      }
+    });
+  }
+
+  // ------------------------------------------------------------
+  // AMBIENT PARTICLES
+  // ------------------------------------------------------------
+
+  function spawnAmbientDot() {
+    const dot = document.createElement("div");
+    dot.className = "ambient-dot";
+
+    const x = window.innerWidth * (0.3 + Math.random() * 0.4);
+    const startY = window.innerHeight * 0.75;
+
+    dot.style.left = `${x}px`;
+    dot.style.top = `${startY}px`;
+
+    ambientLayer.appendChild(dot);
+
+    gsap.timeline({
+      onComplete: () => dot.remove()
+    })
+      .to(dot, {
+        opacity: 0.6,
+        duration: 0.4
+      }, 0)
+      .to(dot, {
+        y: -180 - Math.random() * 100,
+        x: `+=${(Math.random() - 0.5) * 60}`,
+        duration: 2.4,
+        ease: "power1.out"
+      }, 0)
+      .to(dot, {
+        opacity: 0,
+        duration: 0.5
+      }, 1.9);
+  }
+
+  function startAmbientParticles() {
+    if (ambientTimer) return;
+
+    spawnAmbientDot();
+    ambientTimer = window.setInterval(spawnAmbientDot, 700);
+  }
+
+  function stopAmbientParticles() {
+    if (ambientTimer) {
+      window.clearInterval(ambientTimer);
+      ambientTimer = null;
+    }
+  }
+
+  // ------------------------------------------------------------
+  // PAGE VISIBILITY
+  // Stop camera when page is hidden.
+  // This prevents another app/tab from fighting for the camera.
+  // ------------------------------------------------------------
+
+  document.addEventListener("visibilitychange", async () => {
+    if (document.hidden) {
+      try {
+        if (hasStartedAR) {
+          const mindarSystem = sceneEl.systems["mindar-image-system"];
+          if (mindarSystem && typeof mindarSystem.stop === "function") {
+            await mindarSystem.stop();
+          }
+        }
+      } catch (error) {
+        console.warn("90's MACHINE: Could not stop camera:", error);
+      }
+    }
+  });
+
+  // ------------------------------------------------------------
+  // INITIAL ENVIRONMENT CHECK
+  // ------------------------------------------------------------
+
+  console.log("90's MACHINE environment:", {
+    href: location.href,
+    secureContext: window.isSecureContext,
+    mediaDevices: !!navigator.mediaDevices,
+    userAgent: navigator.userAgent
+  });
+</script>
 </body>
 </html>
