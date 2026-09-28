@@ -344,7 +344,7 @@
         gltf-model="#model-tv" 
         rotation="0 0 0" 
         position="0 -0.1 0" 
-        scale="0.5 0.5 0.5"
+        scale="0.35 0.35 0.35"
       ></a-entity>
     </a-entity>
 
@@ -355,7 +355,7 @@
         gltf-model="#model-computer" 
         rotation="0 0 0" 
         position="0 -0.1 0" 
-        scale="0.5 0.5 0.5"
+        scale="0.12 0.12 0.12"
       ></a-entity>
     </a-entity>
 
@@ -366,7 +366,7 @@
         gltf-model="#model-coinbox" 
         rotation="0 0 0" 
         position="0 -0.1 0" 
-        scale="0.5 0.5 0.5"
+        scale="0.35 0.35 0.35"
       ></a-entity>
     </a-entity>
 
@@ -377,7 +377,7 @@
         gltf-model="#model-colgate" 
         rotation="0 0 0" 
         position="0 -0.1 0" 
-        scale="0.5 0.5 0.5"
+        scale="0.35 0.35 0.35"
       ></a-entity>
     </a-entity>
 
@@ -388,7 +388,7 @@
         gltf-model="#model-pot" 
         rotation="0 0 0" 
         position="0 -0.1 0" 
-        scale="0.5 0.5 0.5"
+        scale="0.35 0.35 0.35"
       ></a-entity>
     </a-entity>
   </a-scene>
@@ -407,7 +407,10 @@
   const tvVideo = document.querySelector("#tv-video");
   const tvAudio = document.querySelector("#tv-audio");
 
-  const TARGET_SCALE = 0.5;
+  // Final size of each 3D model (index = target number).
+  // Tweak these numbers to resize; smaller number = smaller model.
+  //   0: TV   1: Computer   2: Coin box   3: Colgate   4: Pot
+  const MODEL_SCALES = [0.35, 0.12, 0.35, 0.35, 0.35];
 
   let activeModelEntity = null;
   let hasStartedAR = false;
@@ -742,7 +745,7 @@
   // MODEL ANIMATION
   // ------------------------------------------------------------
 
-  function triggerModelAnimation(entity) {
+  function triggerModelAnimation(entity, finalScale) {
     if (!entity) return;
 
     if (entity.object3D) {
@@ -759,9 +762,9 @@
           z: 0.001
         },
         {
-          x: TARGET_SCALE,
-          y: TARGET_SCALE,
-          z: TARGET_SCALE,
+          x: finalScale,
+          y: finalScale,
+          z: finalScale,
           duration: 0.6,
           ease: "elastic.out(1, 0.55)"
         }
@@ -769,7 +772,7 @@
     } else {
       entity.setAttribute(
         "scale",
-        `${TARGET_SCALE} ${TARGET_SCALE} ${TARGET_SCALE}`
+        `${finalScale} ${finalScale} ${finalScale}`
       );
     }
   }
@@ -795,11 +798,11 @@
       stopAmbientParticles();
 
       if (modelEntity.object3D) {
-        triggerModelAnimation(modelEntity);
+        triggerModelAnimation(modelEntity, MODEL_SCALES[i]);
       } else {
         modelEntity.addEventListener(
           "model-loaded",
-          () => triggerModelAnimation(modelEntity),
+          () => triggerModelAnimation(modelEntity, MODEL_SCALES[i]),
           { once: true }
         );
       }
